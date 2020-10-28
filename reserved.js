@@ -23,32 +23,6 @@ async function connect() {
 	}
 }
 
-async function getIdentityReserved() {
-	if (!substrate.query.identity) { console.log("No identity pallet.") }
-	let registration = await substrate.query.identity.identityOf(address.value);
-	registration = registration.value;
-
-	// Deposit for existing identity
-	let deposit = new BN();
-	if (registration.deposit) {
-		deposit = deposit.add(registration.deposit)
-	}
-
-	// Reserved fees for judgements
-	let fees = new BN();
-	if (registration.judgements) {
-		for (const judgement of registration.judgements) {
-			if(judgement.isFeePaid) {
-				// TODO: Need to check this
-				fees = fees.add(judgement.asFeePaid)
-			}
-		}
-	}
-	output.innerText += `Identity: Deposit = ${deposit}, Fees = ${fees}\n`;
-
-	return deposit.add(fees)
-}
-
 async function getDemocracyReserved() {
 	if (!substrate.query.democracy) { console.log("No democracy pallet.") }
 
@@ -85,6 +59,32 @@ async function getDemocracyReserved() {
 	return deposit.add(preimageDeposit);
 }
 
+async function getIdentityReserved() {
+	if (!substrate.query.identity) { console.log("No identity pallet.") }
+	let registration = await substrate.query.identity.identityOf(address.value);
+	registration = registration.value;
+
+	// Deposit for existing identity
+	let deposit = new BN();
+	if (registration.deposit) {
+		deposit = deposit.add(registration.deposit)
+	}
+
+	// Reserved fees for judgements
+	let fees = new BN();
+	if (registration.judgements) {
+		for (const judgement of registration.judgements) {
+			if (judgement.isFeePaid) {
+				// TODO: Need to check this
+				fees = fees.add(judgement.asFeePaid)
+			}
+		}
+	}
+	output.innerText += `Identity: Deposit = ${deposit}, Fees = ${fees}\n`;
+
+	return deposit.add(fees)
+}
+
 async function getIndicesReserved() {
 	if (!substrate.query.indices) { console.log("No indices pallet.") }
 
@@ -105,8 +105,37 @@ async function getIndicesReserved() {
 	return deposit;
 }
 
+async function getMultisigReserved() {
+	if (!substrate.query.multisig) { console.log("No multisig pallet.") }
+
+	let deposit = new BN();
+	// Each index has a user and a deposit amount
+	let indices = await substrate.query.indices.accounts.entries();
+	for (let [key, index] of indices) {
+		index = index.value;
+		let who = index[0];
+		let amount = index[1];
+
+		if (who.toString() == address.value) {
+			deposit = deposit.add(amount);
+		}
+	}
+
+	output.innerText += `Indices: Deposit = ${deposit}\n`;
+	return deposit;
+}
+
 async function getProxyReserved() {
-	// TODO Proxy
+	if (!substrate.query.proxy) { console.log("No proxy pallet.") }
+
+	let proxyDeposit = new BN();
+	let proxies = await substrate.query.proxy.proxies(address.value);
+	let value = proxies[1];
+	proxyDeposit = proxyDeposit.add(value)
+
+	// TODO Anon vs delegator
+	output.innerText += `Proxy: Deposit = ${proxyDeposit}\n`;
+	return proxyDeposit;
 }
 
 async function getRecoveryReserved() {
@@ -123,15 +152,17 @@ async function getRecoveryReserved() {
 	}
 
 	// Active Recoveries
-
-	// TODO: FIX
 	let activeDeposit = new BN();
-	// let activeRecoveries = await substrate.query.recovery.activeRecoveries.entries();
-	// console.log(activeRecoveries);
-	// for (let [key1, key2, active] of activeRecoveries) {
-	// 	console.log(key1, key2, active);
-	// }
-
+	let activeRecoveries = await substrate.query.recovery.activeRecoveries.entries();
+	console.log(activeRecoveries);
+	for (let [keys, active] of activeRecoveries) {
+		// TODO: Confirm works
+		let who = keys.args[1];
+		let value = active.deposit;
+		if (who.toString() == address.value) {
+			activeDeposit = activeDeposit.add(value);
+		}
+	}
 
 	output.innerText += `Recovery: Recoverable = ${recoverableDeposit}, Active: ${activeDeposit}\n`;
 	return recoverableDeposit.add(activeDeposit);
@@ -155,7 +186,7 @@ async function getSocietyReserved() {
 }
 
 async function getTreasuryReserved() {
-	if (!substrate.query.treasury) { console.log("No society pallet.") }
+	if (!substrate.query.treasury) { console.log("No treasury pallet.") }
 
 	let proposalDeposit = new BN();
 	let proposals = await substrate.query.treasury.proposals.entries();
@@ -185,6 +216,7 @@ async function getTreasuryReserved() {
 	for (let [key, bounty] of bounties) {
 		bounty = bounty.value;
 		let status = bounty.status;
+		// Bounty is not funded yet, so there is still a deposit for proposer.
 		if (status.isProposed || status.isFunded) {
 			let who = bounty.proposer;
 			let value = bounty.bond;
@@ -192,6 +224,7 @@ async function getTreasuryReserved() {
 				bountyDeposit = bountyDeposit.add(value);
 			}
 		} else {
+			// Curator has a deposit.
 			let value = bounty.curatorDeposit;
 			if (!value.isZero()) {
 				let status = bounty.status;
@@ -224,13 +257,13 @@ async function calculateReserved() {
 	let reserved = new BN();
 
 	// Calculate the reserved balance pallet to pallet
-	//reserved = reserved.add(await getDemocracyReserved());
+	reserved = reserved.add(await getDemocracyReserved());
 	reserved = reserved.add(await getIdentityReserved());
-	//reserved = reserved.add(await getIndicesReserved());
+	reserved = reserved.add(await getIndicesReserved());
 	//reserved = reserved.add(await getMultisigReserved());
-	//reserved = reserved.add(await getProxyReserved());
-	//reserved = reserved.add(await getRecoveryReserved());
-	//reserved = reserved.add(await getSocietyReserved());
+	reserved = reserved.add(await getProxyReserved());
+	reserved = reserved.add(await getRecoveryReserved());
+	reserved = reserved.add(await getSocietyReserved());
 	reserved = reserved.add(await getTreasuryReserved());
 
 	output.innerText += `Final: ${reserved}\n`;

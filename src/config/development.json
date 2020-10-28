@@ -1,0 +1,7 @@
+{
+  "CUSTOM_TYPES": {
+    "Address": "AccountId",
+    "LookupSource": "AccountId"
+  },
+  "PROVIDER_SOCKET": "wss://rpc.polkadot.io"
+}

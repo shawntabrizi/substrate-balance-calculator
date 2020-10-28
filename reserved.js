@@ -24,7 +24,10 @@ async function connect() {
 }
 
 async function getDemocracyReserved() {
-	if (!substrate.query.democracy) { console.log("No democracy pallet.") }
+	if (!substrate.query.democracy) {
+		console.log("No democracy pallet.");
+		return new BN();
+	}
 
 	let deposit = new BN();
 	// Get all DepositOf
@@ -60,7 +63,11 @@ async function getDemocracyReserved() {
 }
 
 async function getIdentityReserved() {
-	if (!substrate.query.identity) { console.log("No identity pallet.") }
+	if (!substrate.query.identity) {
+		console.log("No identity pallet.");
+		return new BN();
+	}
+
 	let registration = await substrate.query.identity.identityOf(address.value);
 	registration = registration.value;
 
@@ -86,7 +93,10 @@ async function getIdentityReserved() {
 }
 
 async function getIndicesReserved() {
-	if (!substrate.query.indices) { console.log("No indices pallet.") }
+	if (!substrate.query.indices) {
+		console.log("No indices pallet.");
+		return new BN();
+	}
 
 	let deposit = new BN();
 	// Each index has a user and a deposit amount
@@ -106,7 +116,10 @@ async function getIndicesReserved() {
 }
 
 async function getMultisigReserved() {
-	if (!substrate.query.multisig) { console.log("No multisig pallet.") }
+	if (!substrate.query.multisig) {
+		console.log("No multisig pallet.");
+		return new BN();
+	}
 
 	let multisigDeposit = new BN();
 	let multisigs = await substrate.query.multisig.multisigs.entries();
@@ -137,7 +150,10 @@ async function getMultisigReserved() {
 }
 
 async function getProxyReserved() {
-	if (!substrate.query.proxy) { console.log("No proxy pallet.") }
+	if (!substrate.query.proxy) {
+		console.log("No proxy pallet.");
+		return new BN();
+	}
 
 	let proxyDeposit = new BN();
 	let proxies = await substrate.query.proxy.proxies(address.value);
@@ -150,7 +166,10 @@ async function getProxyReserved() {
 }
 
 async function getRecoveryReserved() {
-	if (!substrate.query.recovery) { console.log("No recovery pallet.") }
+	if (!substrate.query.recovery) {
+		console.log("No recovery pallet.");
+		return new BN();
+	}
 
 	// User has a recovery setup
 	let recoverableDeposit = new BN();
@@ -180,7 +199,10 @@ async function getRecoveryReserved() {
 }
 
 async function getSocietyReserved() {
-	if (!substrate.query.society) { console.log("No society pallet.") }
+	if (!substrate.query.society) {
+		console.log("No society pallet.");
+		return new BN();
+	}
 
 	let bidDeposit = new BN();
 	let bids = await substrate.query.society.bids();
@@ -197,7 +219,10 @@ async function getSocietyReserved() {
 }
 
 async function getTreasuryReserved() {
-	if (!substrate.query.treasury) { console.log("No treasury pallet.") }
+	if (!substrate.query.treasury) {
+		console.log("No treasury pallet.");
+		return new BN();
+	}
 
 	let proposalDeposit = new BN();
 	let proposals = await substrate.query.treasury.proposals.entries();

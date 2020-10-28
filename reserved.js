@@ -118,7 +118,7 @@ async function getRecoveryReserved() {
 	if (recoverable.isSome) {
 		recoverable = recoverable.value;
 		if (recoverable.deposit) {
-			recoverableDeposit = recoverable.deposit;
+			recoverableDeposit = recoverableDeposit.add(recoverable.deposit);
 		}
 	}
 
@@ -154,6 +154,61 @@ async function getSocietyReserved() {
 	return bidDeposit;
 }
 
+async function getTreasuryReserved() {
+	if (!substrate.query.treasury) { console.log("No society pallet.") }
+
+	let proposalDeposit = new BN();
+	let proposals = await substrate.query.treasury.proposals.entries();
+	for (let [key, proposal] of proposals) {
+		proposal = proposal.value;
+		let who = proposal.proposer;
+		let value = proposal.bond;
+		if (who.toString() == address.value) {
+			proposalDeposit = proposalDeposit.add(value);
+		}
+	}
+
+	let tipDeposit = new BN();
+	let tips = await substrate.query.treasury.tips.entries();
+	for (let [key, tip] of tips) {
+		tip = tip.value;
+		let who = tip.who;
+		let value = tip.deposit;
+		if (who.toString() == address.value) {
+			tipDeposit = tipDeposit.add(value);
+		}
+	}
+
+	let curatorDeposit = new BN();
+	let bountyDeposit = new BN();
+	let bounties = await substrate.query.treasury.bounties.entries();
+	for (let [key, bounty] of bounties) {
+		bounty = bounty.value;
+		let status = bounty.status;
+		if (status.isProposed || status.isFunded) {
+			let who = bounty.proposer;
+			let value = bounty.bond;
+			if (who.toString() == address.value) {
+				bountyDeposit = bountyDeposit.add(value);
+			}
+		} else {
+			let value = bounty.curatorDeposit;
+			if (!value.isZero()) {
+				let status = bounty.status;
+				if (status.value && status.value.curator) {
+					let who = status.value.curator;
+					if (who.toString() == address.value) {
+						curatorDeposit = curatorDeposit.add(value);
+					}
+				}
+			}
+		}
+	}
+
+	output.innerText += `Treasury: Proposal = ${proposalDeposit}, Tip = ${tipDeposit}, Bounty = ${bountyDeposit}, Curator = ${curatorDeposit}\n`;
+	return proposalDeposit.add(tipDeposit).add(curatorDeposit);
+}
+
 async function getActualReserved() {
 	let account = await substrate.derive.balances.all(address.value);
 	return account.reservedBalance;
@@ -175,7 +230,8 @@ async function calculateReserved() {
 	//reserved = reserved.add(await getMultisigReserved());
 	//reserved = reserved.add(await getProxyReserved());
 	//reserved = reserved.add(await getRecoveryReserved());
-	reserved = reserved.add(await getSocietyReserved());
+	//reserved = reserved.add(await getSocietyReserved());
+	reserved = reserved.add(await getTreasuryReserved());
 
 	output.innerText += `Final: ${reserved}\n`;
 

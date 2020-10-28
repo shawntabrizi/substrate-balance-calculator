@@ -108,21 +108,32 @@ async function getIndicesReserved() {
 async function getMultisigReserved() {
 	if (!substrate.query.multisig) { console.log("No multisig pallet.") }
 
-	let deposit = new BN();
-	// Each index has a user and a deposit amount
-	let indices = await substrate.query.indices.accounts.entries();
-	for (let [key, index] of indices) {
-		index = index.value;
-		let who = index[0];
-		let amount = index[1];
+	let multisigDeposit = new BN();
+	let multisigs = await substrate.query.multisig.multisigs.entries();
+	for (let [key, multisig] of multisigs) {
+		multisig = multisig.value;
+		let who = multisig.depositor;
+		let amount = multisig.deposit;
 
 		if (who.toString() == address.value) {
-			deposit = deposit.add(amount);
+			multisigDeposit = multisigDeposit.add(amount);
 		}
 	}
 
-	output.innerText += `Indices: Deposit = ${deposit}\n`;
-	return deposit;
+	let callsDeposit = new BN();
+	let calls = await substrate.query.multisig.calls.entries();
+	for (let [key, call] of calls) {
+		call = call.value;
+		let who = call[1];
+		let amount = call[2];
+
+		if (who.toString() == address.value) {
+			callsDeposit = callsDeposit.add(amount);
+		}
+	}
+
+	output.innerText += `Multisig: Deposit = ${multisigDeposit}, Calls = ${callsDeposit}\n`;
+	return multisigDeposit.add(callsDeposit);
 }
 
 async function getProxyReserved() {
@@ -260,7 +271,7 @@ async function calculateReserved() {
 	reserved = reserved.add(await getDemocracyReserved());
 	reserved = reserved.add(await getIdentityReserved());
 	reserved = reserved.add(await getIndicesReserved());
-	//reserved = reserved.add(await getMultisigReserved());
+	reserved = reserved.add(await getMultisigReserved());
 	reserved = reserved.add(await getProxyReserved());
 	reserved = reserved.add(await getRecoveryReserved());
 	reserved = reserved.add(await getSocietyReserved());
@@ -275,5 +286,4 @@ async function calculateReserved() {
 	// Show difference between calculated and actual
 	let diff = actualReserved.sub(reserved)
 	output.innerText += `Difference: ${diff}\n`;
-
 }

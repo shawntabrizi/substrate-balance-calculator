@@ -4,6 +4,7 @@ let address = document.getElementById("address");
 
 // Global Variables
 var global = {
+	address: '',
 	endpoint: '',
 	chainDecimals: '',
 	chainToken: 'Units',
@@ -45,7 +46,7 @@ async function getDemocracyReserved() {
 		let amount = d.value[1];
 		// Find where the user matches
 		for (user of users) {
-			if (user.toString() == address.value) {
+			if (util.u8aEq(user, global.address)) {
 				// Add the deposit amount
 				deposit = deposit.add(amount);
 			}
@@ -60,7 +61,7 @@ async function getDemocracyReserved() {
 		if (preimage.isAvailable) {
 			// TODO: Check if works
 			preimage = preimage.asAvailable;
-			if (preimage.provider.toString() == address.value) {
+			if (util.u8aEq(preimage.provider, global.address)) {
 				preimageDeposit = preimageDeposit.add(preimage.deposit);
 			}
 		}
@@ -76,13 +77,11 @@ async function getElectionsReserved() {
 		return new BN();
 	}
 
-	let who = address.value;
+	let votingBond = (await substrate.query.electionsPhragmen.voting(global.address))[1].length > 0 ? substrate.consts.electionsPhragmen.votingBond : new BN();
 
-	let votingBond = (await substrate.query.electionsPhragmen.voting(who))[1].length > 0 ? substrate.consts.electionsPhragmen.votingBond : new BN();
-
-	let is_member = (await substrate.query.electionsPhragmen.members()).find(([m, _]) => m.toHuman() == who) != undefined;
-	let is_runner_up = (await substrate.query.electionsPhragmen.runnersUp()).find(([m, _]) => m.toHuman() == who) != undefined;
-	let is_candidate = (await substrate.query.electionsPhragmen.candidates()).find((c) => c.toHuman() == who) != undefined;
+	let is_member = (await substrate.query.electionsPhragmen.members()).find(([m, _]) => util.u8aEq(m, global.address)) != undefined;
+	let is_runner_up = (await substrate.query.electionsPhragmen.runnersUp()).find(([m, _]) => util.u8aEq(m, global.address)) != undefined;
+	let is_candidate = (await substrate.query.electionsPhragmen.candidates()).find((c) => util.u8aEq(c, global.address)) != undefined;
 	let candidateBond = is_member || is_runner_up || is_candidate ? substrate.consts.electionsPhragmen.candidacyBond : new BN();
 
 	output.innerText += `Elections: Voting = ${votingBond}, Candidate = ${candidateBond}\n`;
@@ -96,7 +95,7 @@ async function getIdentityReserved() {
 		return new BN();
 	}
 
-	let registration = await substrate.query.identity.identityOf(address.value);
+	let registration = await substrate.query.identity.identityOf(global.address);
 	registration = registration.value;
 
 	// Deposit for existing identity
@@ -134,7 +133,7 @@ async function getIndicesReserved() {
 		let who = index[0];
 		let amount = index[1];
 
-		if (who.toString() == address.value) {
+		if (util.u8aEq(who, global.address)) {
 			deposit = deposit.add(amount);
 		}
 	}
@@ -156,7 +155,7 @@ async function getMultisigReserved() {
 		let who = multisig.depositor;
 		let amount = multisig.deposit;
 
-		if (who.toString() == address.value) {
+		if (util.u8aEq(who, global.address)) {
 			multisigDeposit = multisigDeposit.add(amount);
 		}
 	}
@@ -168,7 +167,7 @@ async function getMultisigReserved() {
 		let who = call[1];
 		let amount = call[2];
 
-		if (who.toString() == address.value) {
+		if (util.u8aEq(who, global.address)) {
 			callsDeposit = callsDeposit.add(amount);
 		}
 	}
@@ -184,12 +183,12 @@ async function getProxyReserved() {
 	}
 
 	let proxyDeposit = new BN();
-	let proxies = await substrate.query.proxy.proxies(address.value);
+	let proxies = await substrate.query.proxy.proxies(global.address);
 	let value = proxies[1];
 	proxyDeposit = proxyDeposit.add(value)
 
 	let announcementDeposit = new BN();
-	let announcements = await substrate.query.proxy.announcements(address.value);
+	let announcements = await substrate.query.proxy.announcements(global.address);
 	let announcementValue = proxies[1];
 	announcementDeposit = announcementDeposit.add(announcementValue)
 
@@ -206,7 +205,7 @@ async function getRecoveryReserved() {
 
 	// User has a recovery setup
 	let recoverableDeposit = new BN();
-	let recoverable = await substrate.query.recovery.recoverable(address.value);
+	let recoverable = await substrate.query.recovery.recoverable(global.address);
 	if (recoverable.isSome) {
 		recoverable = recoverable.value;
 		if (recoverable.deposit) {
@@ -217,12 +216,11 @@ async function getRecoveryReserved() {
 	// Active Recoveries
 	let activeDeposit = new BN();
 	let activeRecoveries = await substrate.query.recovery.activeRecoveries.entries();
-	console.log(activeRecoveries);
 	for (let [keys, active] of activeRecoveries) {
 		// TODO: Confirm works
 		let who = keys.args[1];
 		let value = active.deposit;
-		if (who.toString() == address.value) {
+		if (util.u8aEq(who, global.address)) {
 			activeDeposit = activeDeposit.add(value);
 		}
 	}
@@ -240,7 +238,7 @@ async function getSocietyReserved() {
 	let bidDeposit = new BN();
 	let bids = await substrate.query.society.bids();
 	for (bid of bids) {
-		if (bid.who.toString() == address.value) {
+		if (util.u8aEq(bid.who, global.address)) {
 			if (bid.kind.isDeposit) {
 				bidDeposit = bidDeposit.add(bid.kind.asDeposit);
 			}
@@ -263,7 +261,7 @@ async function getTreasuryReserved() {
 		proposal = proposal.value;
 		let who = proposal.proposer;
 		let value = proposal.bond;
-		if (who.toString() == address.value) {
+		if (util.u8aEq(who, global.address)) {
 			proposalDeposit = proposalDeposit.add(value);
 		}
 	}
@@ -274,7 +272,7 @@ async function getTreasuryReserved() {
 		tip = tip.value;
 		let who = tip.who;
 		let value = tip.deposit;
-		if (who.toString() == address.value) {
+		if (util.u8aEq(who, global.address)) {
 			tipDeposit = tipDeposit.add(value);
 		}
 	}
@@ -289,7 +287,7 @@ async function getTreasuryReserved() {
 		if (status.isProposed || status.isFunded) {
 			let who = bounty.proposer;
 			let value = bounty.bond;
-			if (who.toString() == address.value) {
+			if (util.u8aEq(who, global.address)) {
 				bountyDeposit = bountyDeposit.add(value);
 			}
 		} else {
@@ -299,7 +297,7 @@ async function getTreasuryReserved() {
 				let status = bounty.status;
 				if (status.value && status.value.curator) {
 					let who = status.value.curator;
-					if (who.toString() == address.value) {
+					if (util.u8aEq(who, global.address)) {
 						curatorDeposit = curatorDeposit.add(value);
 					}
 				}
@@ -312,7 +310,7 @@ async function getTreasuryReserved() {
 }
 
 async function getActualReserved() {
-	let account = await substrate.derive.balances.all(address.value);
+	let account = await substrate.derive.balances.all(global.address);
 	return account.reservedBalance;
 }
 
@@ -324,6 +322,8 @@ async function calculateReserved() {
 	await connect();
 	clear();
 	let reserved = new BN();
+
+	global.address = util_crypto.decodeAddress(address.value);
 
 	// Calculate the reserved balance pallet to pallet
 	reserved = reserved.add(await getDemocracyReserved());

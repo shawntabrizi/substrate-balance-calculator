@@ -9,6 +9,14 @@ var global = {
 	chainToken: 'Units',
 };
 
+// Convert a big number balance to expected float with correct units.
+function toUnit(balance) {
+	let decimals = global.chainDecimals;
+	base = new BN(10).pow(new BN(decimals));
+	dm = balance.divmod(base);
+	return dm.div.toString() + "." + dm.mod.abs().toString() + global.chainToken
+}
+
 // Connect to Substrate endpoint
 async function connect() {
 	let endpoint = document.getElementById('endpoint').value;
@@ -160,9 +168,14 @@ async function getProxyReserved() {
 	let value = proxies[1];
 	proxyDeposit = proxyDeposit.add(value)
 
+	let announcementDeposit = new BN();
+	let announcements = await substrate.query.proxy.announcements(address.value);
+	let announcementValue = proxies[1];
+	announcementDeposit = announcementDeposit.add(announcementValue)
+
 	// TODO Anon vs delegator
-	output.innerText += `Proxy: Deposit = ${proxyDeposit}\n`;
-	return proxyDeposit;
+	output.innerText += `Proxy: Deposit = ${proxyDeposit}, Announcement = ${announcementDeposit}\n`;
+	return proxyDeposit.add(announcementDeposit);
 }
 
 async function getRecoveryReserved() {
@@ -302,13 +315,13 @@ async function calculateReserved() {
 	reserved = reserved.add(await getSocietyReserved());
 	reserved = reserved.add(await getTreasuryReserved());
 
-	output.innerText += `Final: ${reserved}\n`;
+	output.innerText += `Final: ${toUnit(reserved)}\n`;
 
 	// Get the current reserved balance for account
 	let actualReserved = await getActualReserved();
-	output.innerText += `Actual: ${actualReserved}\n`;
+	output.innerText += `Actual: ${toUnit(actualReserved)}\n`;
 
 	// Show difference between calculated and actual
 	let diff = actualReserved.sub(reserved)
-	output.innerText += `Difference: ${diff}\n`;
+	output.innerText += `Difference: ${toUnit(diff)}\n`;
 }

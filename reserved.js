@@ -72,7 +72,7 @@ async function getDemocracyReserved() {
 
 async function getElectionsReserved() {
 	if (!substrate.query.electionsPhragmen) {
-		console.log("No democracy pallet.");
+		console.log("No elections pallet.");
 		return new BN();
 	}
 

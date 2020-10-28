@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<meta name="description" content="Low level calculation of balances.">
+	<meta name="author" content="Shawn Tabrizi">
+	<link rel="icon" href="">
+
+	<title>Substrate Balance Calculator</title>
+
+	<!-- Bootstrap core CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+		integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+
+<body>
+	<div class="container">
+		<div class="jumbotron mt-3">
+			<h1>Substrate Balance Calculator</h1>
+			<p class="lead">Low level calculation of balances.</p>
+			<div class="input-group">
+				<input type="text" class="form-control" id="address"
+					value="EGVQCe73TpFyAZx5uKfE1222XfkT3BSKozjgcqzLBnc5eYo" />
+				<div class="input-group-append">
+					<a class="btn btn-lg btn-primary" onclick="calculateReserved();" role="button">Calculate Balance &raquo;</a>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					<div class="input-group">
+						<div class="input-group-prepend">
+							<span class="input-group-text">Endpoint:</span>
+						</div>
+						<input type="text" class="form-control" id="endpoint" value="wss://kusama-rpc.polkadot.io/"
+							placeholder="wss://..." />
+					</div>
+				</div>
+			</div>
+			<div id="log"></div>
+		</div>
+		<div id="output"></div>
+	</div>
+	<div class="fixed-bottom bg-light">
+		<p class="text-center text-muted">Created by <a href="http://shawntabrizi.com">Shawn Tabrizi</a> - Source on <a
+				href="https://github.com/shawntabrizi/substrate-balance-calculator">GitHub</a> - Using <a
+				href="https://github.com/polkadot-js/api/">Polkadot.js</a></p>
+	</div>
+
+	<!-- Bootstrap core JavaScript
+    ================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+		integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+		crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+		integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+		crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+		integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+		crossorigin="anonymous"></script>
+
+	<!-- Custom JavaScript -->
+	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+	<script src="//unpkg.com/bn.js/lib/bn.js"></script>
+	<script src="//unpkg.com/polkadot-js-bundle/polkadot.js"></script>
+	<script src="//unpkg.com/bn/jsbn/jsbn.js"></script>
+	<script src="./reserved.js"></script>
+</body>
+
+</html>

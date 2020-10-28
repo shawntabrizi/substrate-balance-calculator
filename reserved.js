@@ -70,6 +70,26 @@ async function getDemocracyReserved() {
 	return deposit.add(preimageDeposit);
 }
 
+async function getElectionsReserved() {
+	if (!substrate.query.electionsPhragmen) {
+		console.log("No democracy pallet.");
+		return new BN();
+	}
+
+	let who = address.value;
+
+	let votingBond = (await substrate.query.electionsPhragmen.voting(who))[1].length > 0 ? substrate.consts.electionsPhragmen.votingBond : new BN();
+
+	let is_member = (await substrate.query.electionsPhragmen.members()).find(([m, _]) => m.toHuman() == who) != undefined;
+	let is_runner_up = (await substrate.query.electionsPhragmen.runnersUp()).find(([m, _]) => m.toHuman() == who) != undefined;
+	let is_candidate = (await substrate.query.electionsPhragmen.candidates()).find((c) => c.toHuman() == who) != undefined;
+	let candidateBond = is_member || is_runner_up || is_candidate ? substrate.consts.electionsPhragmen.candidacyBond : new BN();
+
+	output.innerText += `Elections: Voting = ${votingBond}, Candidate = ${candidateBond}\n`;
+
+	return votingBond.add(candidateBond)
+}
+
 async function getIdentityReserved() {
 	if (!substrate.query.identity) {
 		console.log("No identity pallet.");
@@ -307,6 +327,7 @@ async function calculateReserved() {
 
 	// Calculate the reserved balance pallet to pallet
 	reserved = reserved.add(await getDemocracyReserved());
+	reserved = reserved.add(await getElectionsReserved());
 	reserved = reserved.add(await getIdentityReserved());
 	reserved = reserved.add(await getIndicesReserved());
 	reserved = reserved.add(await getMultisigReserved());

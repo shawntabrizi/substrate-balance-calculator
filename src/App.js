@@ -10,10 +10,11 @@ import BlockNumber from './BlockNumber';
 import Metadata from './Metadata';
 import NodeInfo from './NodeInfo';
 import User from './User';
+import Identity from './pallets/Identity';
 
 
 function Main () {
-  const [address, setAddress] = useState(null);
+  const [address, setAddress] = useState("12hAtDZJGt4of3m2GqZcUCVAjZPALfvPwvtUTFZPQUbdX1Ud");
   const { apiState, keyring, keyringState, apiError } = useSubstrate();
 
   const loader = text =>
@@ -55,6 +56,10 @@ function Main () {
           </Grid.Row>
           <Grid.Row stretched>
             <Balances address={address}/>
+          </Grid.Row>
+          <hr />
+          <Grid.Row stretched>
+            <Identity address={address} />
           </Grid.Row>
         </Grid>
       </Container>

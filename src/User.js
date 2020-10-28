@@ -4,8 +4,15 @@ import { Form, Input, Grid } from 'semantic-ui-react';
 export default function Main(props) {
 	const { address, setAddress } = props;
 
-	const onChange = (_, data) =>
-		setAddress(data.value);
+	const onChange = (_, data) => {
+		let address = data.value;
+		// Temp hack
+		if (address.length == 47) {
+			setAddress(data.value);
+		} else {
+			setAddress("12hAtDZJGt4of3m2GqZcUCVAjZPALfvPwvtUTFZPQUbdX1Ud");
+		}
+	}
 
 	return (
 		<Grid.Column width={8}>

@@ -15,7 +15,7 @@ function toUnit(balance) {
 	let decimals = global.chainDecimals;
 	base = new BN(10).pow(new BN(decimals));
 	dm = balance.divmod(base);
-	return dm.div.toString() + "." + dm.mod.abs().toString() + global.chainToken
+	return dm.div.toString() + "." + dm.mod.abs().toString() + " " + global.chainToken
 }
 
 // Connect to Substrate endpoint
@@ -27,7 +27,7 @@ async function connect() {
 		window.substrate = await api.ApiPromise.create({ provider });
 		global.endpoint = endpoint;
 		global.chainDecimals = substrate.registry.chainDecimals;
-		global.chainToken = substrate.registry.chainToken;
+		global.chainToken = substrate.registry.chainTokens[0];
 		log.innerHTML = 'Connected';
 	}
 }
@@ -267,7 +267,7 @@ async function getTreasuryReserved() {
 	}
 
 	let tipDeposit = new BN();
-	let tips = await substrate.query.treasury.tips.entries();
+	let tips = await substrate.query.tips.tips.entries();
 	for (let [key, tip] of tips) {
 		tip = tip.value;
 		let who = tip.who;
@@ -279,7 +279,7 @@ async function getTreasuryReserved() {
 
 	let curatorDeposit = new BN();
 	let bountyDeposit = new BN();
-	let bounties = await substrate.query.treasury.bounties.entries();
+	let bounties = await substrate.query.bounties.bounties.entries();
 	for (let [key, bounty] of bounties) {
 		bounty = bounty.value;
 		let status = bounty.status;

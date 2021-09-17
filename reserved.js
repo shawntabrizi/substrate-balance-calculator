@@ -82,7 +82,6 @@ async function getDemocracyReserved() {
 	return deposit.add(preimageDeposit);
 }
 
-/*
 async function getElectionsReserved() {
 	if (!substrate.query.electionsPhragmen) {
 		console.log("No elections pallet.");
@@ -100,7 +99,6 @@ async function getElectionsReserved() {
 
 	return votingBond.add(candidateBond)
 }
-*/
 
 async function getPhragmenElectionReserved() {
 	if (!substrate.query.phragmenElection) {
@@ -404,7 +402,7 @@ async function calculateReserved() {
 
 	// Calculate the reserved balance pallet to pallet
 	reserved = reserved.add(await getDemocracyReserved());
-	//reserved = reserved.add(await getElectionsReserved());
+	reserved = reserved.add(await getElectionsReserved());
 	reserved = reserved.add(await getPhragmenElectionReserved());
 	reserved = reserved.add(await getIdentityReserved());
 	reserved = reserved.add(await getRegistrarReserved());

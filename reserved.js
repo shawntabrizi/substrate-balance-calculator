@@ -67,7 +67,7 @@ async function getDemocracyReserved() {
 		}
 	}
 
-	output.innerText += `Democracy: Deposit = ${deposit}, Preimage = ${preimageDeposit}\n`;
+	output.innerText += `Democracy: Deposit = ${toUnit(deposit)}, Preimage = ${toUnit(preimageDeposit)}\n`;
 	return deposit.add(preimageDeposit);
 }
 
@@ -84,7 +84,7 @@ async function getElectionsReserved() {
 	let is_candidate = (await substrate.query.electionsPhragmen.candidates()).find((c) => util.u8aEq(c, global.address)) != undefined;
 	let candidateBond = is_member || is_runner_up || is_candidate ? substrate.consts.electionsPhragmen.candidacyBond : new BN();
 
-	output.innerText += `Elections: Voting = ${votingBond}, Candidate = ${candidateBond}\n`;
+	output.innerText += `Elections: Voting = ${toUnit(votingBond)}, Candidate = ${toUnit(candidateBond)}\n`;
 
 	return votingBond.add(candidateBond)
 }
@@ -114,7 +114,7 @@ async function getIdentityReserved() {
 			}
 		}
 	}
-	output.innerText += `Identity: Deposit = ${deposit}, Fees = ${fees}\n`;
+	output.innerText += `Identity: Deposit = ${toUnit(deposit)}, Fees = ${toUnit(fees)}\n`;
 
 	return deposit.add(fees)
 }
@@ -138,7 +138,7 @@ async function getIndicesReserved() {
 		}
 	}
 
-	output.innerText += `Indices: Deposit = ${deposit}\n`;
+	output.innerText += `Indices: Deposit = ${toUnit(deposit)}\n`;
 	return deposit;
 }
 
@@ -172,7 +172,7 @@ async function getMultisigReserved() {
 		}
 	}
 
-	output.innerText += `Multisig: Deposit = ${multisigDeposit}, Calls = ${callsDeposit}\n`;
+	output.innerText += `Multisig: Deposit = ${toUnit(multisigDeposit)}, Calls = ${toUnit(callsDeposit)}\n`;
 	return multisigDeposit.add(callsDeposit);
 }
 
@@ -193,7 +193,7 @@ async function getProxyReserved() {
 	announcementDeposit = announcementDeposit.add(announcementValue)
 
 	// TODO Anon vs delegator
-	output.innerText += `Proxy: Deposit = ${proxyDeposit}, Announcement = ${announcementDeposit}\n`;
+	output.innerText += `Proxy: Deposit = ${toUnit(proxyDeposit)}, Announcement = ${toUnit(announcementDeposit)}\n`;
 	return proxyDeposit.add(announcementDeposit);
 }
 
@@ -225,7 +225,7 @@ async function getRecoveryReserved() {
 		}
 	}
 
-	output.innerText += `Recovery: Recoverable = ${recoverableDeposit}, Active: ${activeDeposit}\n`;
+	output.innerText += `Recovery: Recoverable = ${toUnit(recoverableDeposit)}, Active: ${toUnit(activeDeposit)}\n`;
 	return recoverableDeposit.add(activeDeposit);
 }
 
@@ -245,7 +245,7 @@ async function getSocietyReserved() {
 		}
 	}
 
-	output.innerText += `Society: Bid Deposit = ${bidDeposit}\n`;
+	output.innerText += `Society: Bid Deposit = ${toUnit(bidDeposit)}\n`;
 	return bidDeposit;
 }
 
@@ -305,7 +305,7 @@ async function getTreasuryReserved() {
 		}
 	}
 
-	output.innerText += `Treasury: Proposal = ${proposalDeposit}, Tip = ${tipDeposit}, Bounty = ${bountyDeposit}, Curator = ${curatorDeposit}\n`;
+	output.innerText += `Treasury: Proposal = ${toUnit(proposalDeposit)}, Tip = ${toUnit(tipDeposit)}, Bounty = ${toUnit(bountyDeposit)}, Curator = ${toUnit(curatorDeposit)}\n`;
 	return proposalDeposit.add(tipDeposit).add(curatorDeposit);
 }
 

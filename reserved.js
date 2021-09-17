@@ -71,6 +71,7 @@ async function getDemocracyReserved() {
 	return deposit.add(preimageDeposit);
 }
 
+/*
 async function getElectionsReserved() {
 	if (!substrate.query.electionsPhragmen) {
 		console.log("No elections pallet.");
@@ -87,6 +88,25 @@ async function getElectionsReserved() {
 	output.innerText += `Elections: Voting = ${toUnit(votingBond)}, Candidate = ${toUnit(candidateBond)}\n`;
 
 	return votingBond.add(candidateBond)
+}
+*/
+
+async function getPhragmenElectionReserved() {
+	if (!substrate.query.phragmenElection) {
+		console.log("No phragmen elections pallet.");
+		return new BN();
+	}
+
+	let voter = await substrate.query.phragmenElection.voting(global.address);
+
+	let deposit = new BN();
+	if (voter.deposit) {
+		deposit = deposit.add(voter.deposit);
+		console.log(deposit);
+	}
+	output.innerText += `Phragmen Elections: Deposit = ${toUnit(deposit)}\n`
+
+	return deposit;
 }
 
 async function getIdentityReserved() {
@@ -352,7 +372,8 @@ async function calculateReserved() {
 
 	// Calculate the reserved balance pallet to pallet
 	reserved = reserved.add(await getDemocracyReserved());
-	reserved = reserved.add(await getElectionsReserved());
+	//reserved = reserved.add(await getElectionsReserved());
+	reserved = reserved.add(await getPhragmenElectionReserved());
 	reserved = reserved.add(await getIdentityReserved());
 	reserved = reserved.add(await getRegistrarReserved());
 	reserved = reserved.add(await getIndicesReserved());

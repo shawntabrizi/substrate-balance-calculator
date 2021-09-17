@@ -123,6 +123,27 @@ async function getIdentityReserved() {
 	return deposit.add(fees).add(subDeposit);
 }
 
+async function getRegistrarReserved() {
+	if (!substrate.query.registrar) {
+		console.log("No registrar pallet.");
+		return new BN();
+	}
+
+	let deposit = new BN();
+	let paras = await substrate.query.registrar.paras.entries();
+	for (let [key, para] of paras) {
+		para = para.value;
+		let who = para.manager;
+		let value = para.deposit;
+		if (util.u8aEq(who, global.address)) {
+			deposit = deposit.add(value);
+		}
+	}
+	output.innerText += `Registrar: Deposit = ${toUnit(deposit)}\n`
+
+	return deposit;
+}
+
 async function getIndicesReserved() {
 	if (!substrate.query.indices) {
 		console.log("No indices pallet.");
@@ -333,6 +354,7 @@ async function calculateReserved() {
 	reserved = reserved.add(await getDemocracyReserved());
 	reserved = reserved.add(await getElectionsReserved());
 	reserved = reserved.add(await getIdentityReserved());
+	reserved = reserved.add(await getRegistrarReserved());
 	reserved = reserved.add(await getIndicesReserved());
 	reserved = reserved.add(await getMultisigReserved());
 	reserved = reserved.add(await getProxyReserved());

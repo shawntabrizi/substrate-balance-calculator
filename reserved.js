@@ -15,7 +15,18 @@ function toUnit(balance) {
 	let decimals = global.chainDecimals;
 	base = new BN(10).pow(new BN(decimals));
 	dm = balance.divmod(base);
-	return dm.div.toString() + "." + dm.mod.abs().toString() + " " + global.chainToken
+	modulus = dm.mod.abs().toString();
+	if (!dm.mod.isZero()) {
+		const additionalZeros = decimals - modulus.length;
+		for (let i = 0; i < additionalZeros; i++) {
+			modulus = '0' + modulus; 
+		}
+	}
+	let sign = "";
+	if (dm.mod < 0) {
+		sign = "-";
+	}
+	return sign + dm.div.toString() + "." + modulus + " " + global.chainToken
 }
 
 // Connect to Substrate endpoint

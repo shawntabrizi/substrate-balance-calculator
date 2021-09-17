@@ -97,11 +97,15 @@ async function getIdentityReserved() {
 
 	let registration = await substrate.query.identity.identityOf(global.address);
 	registration = registration.value;
+	let subIdentities = await substrate.query.identity.subsOf(global.address);
 
 	// Deposit for existing identity
 	let deposit = new BN();
+	// Deposit for any subidentities
+	let subDeposit = new BN();
 	if (registration.deposit) {
-		deposit = deposit.add(registration.deposit)
+		deposit = deposit.add(registration.deposit);
+		subDeposit = subDeposit.add(subIdentities[0]);
 	}
 
 	// Reserved fees for judgements
@@ -114,9 +118,9 @@ async function getIdentityReserved() {
 			}
 		}
 	}
-	output.innerText += `Identity: Deposit = ${toUnit(deposit)}, Fees = ${toUnit(fees)}\n`;
+	output.innerText += `Identity: Deposit = ${toUnit(deposit)}, Sub-identities Deposit = ${toUnit(subDeposit)}, Fees = ${toUnit(fees)}\n`;
 
-	return deposit.add(fees)
+	return deposit.add(fees).add(subDeposit);
 }
 
 async function getIndicesReserved() {

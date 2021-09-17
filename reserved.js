@@ -164,6 +164,27 @@ async function getRegistrarReserved() {
 	return deposit;
 }
 
+async function getCrowdloanReserved() {
+	if (!substrate.query.crowdloan) {
+		console.log("No crowdloan pallet.");
+		return new BN();
+	}
+
+	let deposit = new BN();
+	let crowdloans = await substrate.query.crowdloan.funds.entries();
+	for (let [key, crowdloan] of crowdloans) {
+		crowdloan = crowdloan.value;
+		let who = crowdloan.depositor;
+		let value = crowdloan.deposit;
+		if (util.u8aEq(who, global.address)) {
+			deposit = deposit.add(value);
+		}
+	}
+	output.innerText += `Crowdloan: Deposit = ${toUnit(deposit)}\n`
+
+	return deposit;
+}
+
 async function getIndicesReserved() {
 	if (!substrate.query.indices) {
 		console.log("No indices pallet.");
@@ -376,6 +397,7 @@ async function calculateReserved() {
 	reserved = reserved.add(await getPhragmenElectionReserved());
 	reserved = reserved.add(await getIdentityReserved());
 	reserved = reserved.add(await getRegistrarReserved());
+	reserved = reserved.add(await getCrowdloanReserved());
 	reserved = reserved.add(await getIndicesReserved());
 	reserved = reserved.add(await getMultisigReserved());
 	reserved = reserved.add(await getProxyReserved());

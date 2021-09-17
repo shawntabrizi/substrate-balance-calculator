@@ -15,7 +15,23 @@ function toUnit(balance) {
 	let decimals = global.chainDecimals;
 	base = new BN(10).pow(new BN(decimals));
 	dm = balance.divmod(base);
-	return dm.div.toString() + "." + dm.mod.abs().toString() + " " + global.chainToken
+	modulus = dm.mod.abs().toString();
+	if (!dm.mod.isZero()) {
+		// make sure there are enough front zeros
+		const additionalZeros = decimals - modulus.length;
+		for (let i = 0; i < additionalZeros; i++) {
+			modulus = '0' + modulus;
+		}
+		// remove all trailing zeros
+		while (modulus.slice(-1) == "0") {
+			modulus = modulus.slice(0, modulus.length - 1);
+		}
+	}
+	let sign = "";
+	if (dm.mod < 0) {
+		sign = "-";
+	}
+	return sign + dm.div.toString() + "." + modulus + " " + global.chainToken
 }
 
 // Connect to Substrate endpoint
@@ -67,26 +83,26 @@ async function getDemocracyReserved() {
 		}
 	}
 
-	output.innerText += `Democracy: Deposit = ${deposit}, Preimage = ${preimageDeposit}\n`;
+	output.innerText += `Democracy: Deposit = ${toUnit(deposit)}, Preimage = ${toUnit(preimageDeposit)}\n`;
 	return deposit.add(preimageDeposit);
 }
 
-async function getElectionsReserved() {
-	if (!substrate.query.electionsPhragmen) {
-		console.log("No elections pallet.");
+async function getPhragmenElectionReserved() {
+	if (!substrate.query.phragmenElection) {
+		console.log("No phragmen elections pallet.");
 		return new BN();
 	}
 
-	let votingBond = (await substrate.query.electionsPhragmen.voting(global.address))[1].length > 0 ? substrate.consts.electionsPhragmen.votingBond : new BN();
+	let voter = await substrate.query.phragmenElection.voting(global.address);
 
-	let is_member = (await substrate.query.electionsPhragmen.members()).find(([m, _]) => util.u8aEq(m, global.address)) != undefined;
-	let is_runner_up = (await substrate.query.electionsPhragmen.runnersUp()).find(([m, _]) => util.u8aEq(m, global.address)) != undefined;
-	let is_candidate = (await substrate.query.electionsPhragmen.candidates()).find((c) => util.u8aEq(c, global.address)) != undefined;
-	let candidateBond = is_member || is_runner_up || is_candidate ? substrate.consts.electionsPhragmen.candidacyBond : new BN();
+	let deposit = new BN();
+	if (voter.deposit) {
+		deposit = deposit.add(voter.deposit);
+		console.log(deposit);
+	}
+	output.innerText += `Phragmen Elections: Deposit = ${toUnit(deposit)}\n`
 
-	output.innerText += `Elections: Voting = ${votingBond}, Candidate = ${candidateBond}\n`;
-
-	return votingBond.add(candidateBond)
+	return deposit;
 }
 
 async function getIdentityReserved() {
@@ -97,11 +113,15 @@ async function getIdentityReserved() {
 
 	let registration = await substrate.query.identity.identityOf(global.address);
 	registration = registration.value;
+	let subIdentities = await substrate.query.identity.subsOf(global.address);
 
 	// Deposit for existing identity
 	let deposit = new BN();
+	// Deposit for any subidentities
+	let subDeposit = new BN();
 	if (registration.deposit) {
-		deposit = deposit.add(registration.deposit)
+		deposit = deposit.add(registration.deposit);
+		subDeposit = subDeposit.add(subIdentities[0]);
 	}
 
 	// Reserved fees for judgements
@@ -114,9 +134,51 @@ async function getIdentityReserved() {
 			}
 		}
 	}
-	output.innerText += `Identity: Deposit = ${deposit}, Fees = ${fees}\n`;
+	output.innerText += `Identity: Deposit = ${toUnit(deposit)}, Sub-identities Deposit = ${toUnit(subDeposit)}, Fees = ${toUnit(fees)}\n`;
 
-	return deposit.add(fees)
+	return deposit.add(fees).add(subDeposit);
+}
+
+async function getRegistrarReserved() {
+	if (!substrate.query.registrar) {
+		console.log("No registrar pallet.");
+		return new BN();
+	}
+
+	let deposit = new BN();
+	let paras = await substrate.query.registrar.paras.entries();
+	for (let [key, para] of paras) {
+		para = para.value;
+		let who = para.manager;
+		let value = para.deposit;
+		if (util.u8aEq(who, global.address)) {
+			deposit = deposit.add(value);
+		}
+	}
+	output.innerText += `Registrar: Deposit = ${toUnit(deposit)}\n`
+
+	return deposit;
+}
+
+async function getCrowdloanReserved() {
+	if (!substrate.query.crowdloan) {
+		console.log("No crowdloan pallet.");
+		return new BN();
+	}
+
+	let deposit = new BN();
+	let crowdloans = await substrate.query.crowdloan.funds.entries();
+	for (let [key, crowdloan] of crowdloans) {
+		crowdloan = crowdloan.value;
+		let who = crowdloan.depositor;
+		let value = crowdloan.deposit;
+		if (util.u8aEq(who, global.address)) {
+			deposit = deposit.add(value);
+		}
+	}
+	output.innerText += `Crowdloan: Deposit = ${toUnit(deposit)}\n`
+
+	return deposit;
 }
 
 async function getIndicesReserved() {
@@ -138,7 +200,7 @@ async function getIndicesReserved() {
 		}
 	}
 
-	output.innerText += `Indices: Deposit = ${deposit}\n`;
+	output.innerText += `Indices: Deposit = ${toUnit(deposit)}\n`;
 	return deposit;
 }
 
@@ -172,7 +234,7 @@ async function getMultisigReserved() {
 		}
 	}
 
-	output.innerText += `Multisig: Deposit = ${multisigDeposit}, Calls = ${callsDeposit}\n`;
+	output.innerText += `Multisig: Deposit = ${toUnit(multisigDeposit)}, Calls = ${toUnit(callsDeposit)}\n`;
 	return multisigDeposit.add(callsDeposit);
 }
 
@@ -193,7 +255,7 @@ async function getProxyReserved() {
 	announcementDeposit = announcementDeposit.add(announcementValue)
 
 	// TODO Anon vs delegator
-	output.innerText += `Proxy: Deposit = ${proxyDeposit}, Announcement = ${announcementDeposit}\n`;
+	output.innerText += `Proxy: Deposit = ${toUnit(proxyDeposit)}, Announcement = ${toUnit(announcementDeposit)}\n`;
 	return proxyDeposit.add(announcementDeposit);
 }
 
@@ -225,7 +287,7 @@ async function getRecoveryReserved() {
 		}
 	}
 
-	output.innerText += `Recovery: Recoverable = ${recoverableDeposit}, Active: ${activeDeposit}\n`;
+	output.innerText += `Recovery: Recoverable = ${toUnit(recoverableDeposit)}, Active: ${toUnit(activeDeposit)}\n`;
 	return recoverableDeposit.add(activeDeposit);
 }
 
@@ -245,7 +307,7 @@ async function getSocietyReserved() {
 		}
 	}
 
-	output.innerText += `Society: Bid Deposit = ${bidDeposit}\n`;
+	output.innerText += `Society: Bid Deposit = ${toUnit(bidDeposit)}\n`;
 	return bidDeposit;
 }
 
@@ -305,7 +367,7 @@ async function getTreasuryReserved() {
 		}
 	}
 
-	output.innerText += `Treasury: Proposal = ${proposalDeposit}, Tip = ${tipDeposit}, Bounty = ${bountyDeposit}, Curator = ${curatorDeposit}\n`;
+	output.innerText += `Treasury: Proposal = ${toUnit(proposalDeposit)}, Tip = ${toUnit(tipDeposit)}, Bounty = ${toUnit(bountyDeposit)}, Curator = ${toUnit(curatorDeposit)}\n`;
 	return proposalDeposit.add(tipDeposit).add(curatorDeposit);
 }
 
@@ -327,8 +389,10 @@ async function calculateReserved() {
 
 	// Calculate the reserved balance pallet to pallet
 	reserved = reserved.add(await getDemocracyReserved());
-	reserved = reserved.add(await getElectionsReserved());
+	reserved = reserved.add(await getPhragmenElectionReserved());
 	reserved = reserved.add(await getIdentityReserved());
+	reserved = reserved.add(await getRegistrarReserved());
+	reserved = reserved.add(await getCrowdloanReserved());
 	reserved = reserved.add(await getIndicesReserved());
 	reserved = reserved.add(await getMultisigReserved());
 	reserved = reserved.add(await getProxyReserved());

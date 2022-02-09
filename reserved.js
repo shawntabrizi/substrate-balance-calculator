@@ -1,3 +1,8 @@
+const { BN, u8aEq } = polkadotUtil;
+const { decodeAddress } = polkadotUtilCrypto;
+const { WsProvider, ApiPromise } = polkadotApi;
+
+
 let output = document.getElementById("output");
 let log = document.getElementById("log");
 let address = document.getElementById("address");
@@ -38,9 +43,9 @@ function toUnit(balance) {
 async function connect() {
 	let endpoint = document.getElementById('endpoint').value;
 	if (!window.substrate || global.endpoint != endpoint) {
-		const provider = new api.WsProvider(endpoint);
+		const provider = new WsProvider(endpoint);
 		log.innerHTML = 'Connecting to Endpoint...';
-		window.substrate = await api.ApiPromise.create({ provider });
+		window.substrate = await ApiPromise.create({ provider });
 		global.endpoint = endpoint;
 		global.chainDecimals = substrate.registry.chainDecimals;
 		global.chainToken = substrate.registry.chainTokens[0];
@@ -62,7 +67,7 @@ async function getDemocracyReserved() {
 		let amount = d.value[1];
 		// Find where the user matches
 		for (user of users) {
-			if (util.u8aEq(user, global.address)) {
+			if (u8aEq(user, global.address)) {
 				// Add the deposit amount
 				deposit = deposit.add(amount);
 			}
@@ -77,7 +82,7 @@ async function getDemocracyReserved() {
 		if (preimage.isAvailable) {
 			// TODO: Check if works
 			preimage = preimage.asAvailable;
-			if (util.u8aEq(preimage.provider, global.address)) {
+			if (u8aEq(preimage.provider, global.address)) {
 				preimageDeposit = preimageDeposit.add(preimage.deposit);
 			}
 		}
@@ -151,7 +156,7 @@ async function getRegistrarReserved() {
 		para = para.value;
 		let who = para.manager;
 		let value = para.deposit;
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			deposit = deposit.add(value);
 		}
 	}
@@ -172,7 +177,7 @@ async function getCrowdloanReserved() {
 		crowdloan = crowdloan.value;
 		let who = crowdloan.depositor;
 		let value = crowdloan.deposit;
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			deposit = deposit.add(value);
 		}
 	}
@@ -195,7 +200,7 @@ async function getIndicesReserved() {
 		let who = index[0];
 		let amount = index[1];
 
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			deposit = deposit.add(amount);
 		}
 	}
@@ -217,7 +222,7 @@ async function getMultisigReserved() {
 		let who = multisig.depositor;
 		let amount = multisig.deposit;
 
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			multisigDeposit = multisigDeposit.add(amount);
 		}
 	}
@@ -229,7 +234,7 @@ async function getMultisigReserved() {
 		let who = call[1];
 		let amount = call[2];
 
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			callsDeposit = callsDeposit.add(amount);
 		}
 	}
@@ -282,7 +287,7 @@ async function getRecoveryReserved() {
 		// TODO: Confirm works
 		let who = keys.args[1];
 		let value = active.deposit;
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			activeDeposit = activeDeposit.add(value);
 		}
 	}
@@ -300,7 +305,7 @@ async function getSocietyReserved() {
 	let bidDeposit = new BN();
 	let bids = await substrate.query.society.bids();
 	for (bid of bids) {
-		if (util.u8aEq(bid.who, global.address)) {
+		if (u8aEq(bid.who, global.address)) {
 			if (bid.kind.isDeposit) {
 				bidDeposit = bidDeposit.add(bid.kind.asDeposit);
 			}
@@ -323,7 +328,7 @@ async function getTreasuryReserved() {
 		proposal = proposal.value;
 		let who = proposal.proposer;
 		let value = proposal.bond;
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			proposalDeposit = proposalDeposit.add(value);
 		}
 	}
@@ -334,7 +339,7 @@ async function getTreasuryReserved() {
 		tip = tip.value;
 		let who = tip.who;
 		let value = tip.deposit;
-		if (util.u8aEq(who, global.address)) {
+		if (u8aEq(who, global.address)) {
 			tipDeposit = tipDeposit.add(value);
 		}
 	}
@@ -349,7 +354,7 @@ async function getTreasuryReserved() {
 		if (status.isProposed || status.isFunded) {
 			let who = bounty.proposer;
 			let value = bounty.bond;
-			if (util.u8aEq(who, global.address)) {
+			if (u8aEq(who, global.address)) {
 				bountyDeposit = bountyDeposit.add(value);
 			}
 		} else {
@@ -359,7 +364,7 @@ async function getTreasuryReserved() {
 				let status = bounty.status;
 				if (status.value && status.value.curator) {
 					let who = status.value.curator;
-					if (util.u8aEq(who, global.address)) {
+					if (u8aEq(who, global.address)) {
 						curatorDeposit = curatorDeposit.add(value);
 					}
 				}
@@ -385,7 +390,7 @@ async function calculateReserved() {
 	clear();
 	let reserved = new BN();
 
-	global.address = util_crypto.decodeAddress(address.value);
+	global.address = decodeAddress(address.value);
 
 	// Calculate the reserved balance pallet to pallet
 	reserved = reserved.add(await getDemocracyReserved());
